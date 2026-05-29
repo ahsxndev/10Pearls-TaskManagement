@@ -93,12 +93,18 @@ export default function TaskList() {
                         <div style={{ flex: 1 }}>
                             <h3 style={{ margin: '0 0 5px 0', color: '#1a1a1a' }}>{task.title}</h3>
                             <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>{task.description}</p>
-                            <div style={{ display: 'flex', gap: '10px', fontSize: '12px' }}>
+                            
+                            <div style={{ display: 'flex', gap: '10px', fontSize: '12px', alignItems: 'center' }}>
                                 <span style={{ background: '#e0e0e0', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
                                     {task.priority} Priority
                                 </span>
                                 <span style={{ background: '#e0e0e0', padding: '3px 8px', borderRadius: '12px' }}>
                                     {task.category || 'Uncategorized'}
+                                </span>
+                                
+                                {/* 👇 NEW: Dark Badge for User ID so Admins know who owns the task 👇 */}
+                                <span style={{ background: '#1a1a1a', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                    User ID: {task.userId}
                                 </span>
                             </div>
                         </div>

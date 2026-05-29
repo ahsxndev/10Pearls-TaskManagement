@@ -29,12 +29,23 @@ namespace TaskManagementSystem.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
         {
-            int userId = GetUserId();
-            Log.Information("User {UserId} is fetching their tasks.", userId);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var emailClaim = User.FindFirstValue(ClaimTypes.Email); // Read the email from the token
 
-            return await _context.Tasks
-                .Where(t => t.UserId == userId)
-                .ToListAsync();
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim);
+
+            // If the logged-in user is the admin, return EVERYTHING
+            if (emailClaim == "admin@admin.com")
+            {
+                Log.Information("ADMIN ACCESS: Showing all tasks in the system.");
+                return await _context.Tasks.ToListAsync();
+            }
+
+            // Otherwise, standard user behavior (only show their own tasks)
+            Log.Information("User {UserId} is fetching their tasks.", userId);
+            return await _context.Tasks.Where(t => t.UserId == userId).ToListAsync();
         }
 
         [HttpGet("{id}")]
