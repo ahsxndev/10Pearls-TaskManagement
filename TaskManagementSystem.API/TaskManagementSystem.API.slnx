@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="TaskManagementSystem.Tests/TaskManagementSystem.Tests.csproj" Id="b1970d04-8e8b-4fa0-b493-422c44228d49" />
   <Project Path="WebApplication1/WebApplication1.csproj" />
 </Solution>
