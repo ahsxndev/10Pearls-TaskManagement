@@ -17,13 +17,13 @@ export default function TaskForm() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-const handleSubmit = (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         
         // 1. Grab the VIP token from the browser's storage
         const token = localStorage.getItem('token');
 
-        // 2. Post the new task with the Authorization Header as the 3rd parameter
+        // 2. Post the new task with the Authorization Header
         axios.post('https://localhost:7216/api/Tasks', formData, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -35,7 +35,6 @@ const handleSubmit = (e) => {
         })
         .catch(error => {
             console.error("Error creating task:", error);
-            // If the token is missing or expired, it will hit this catch block
             alert('Failed to create task. Are you logged in?');
         });
     };

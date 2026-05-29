@@ -14,9 +14,8 @@ export default function Login() {
         // 1. Send login credentials to C#
         axios.post('https://localhost:7216/api/Auth/login', { email, password })
             .then(response => {
-                // 2. Grab the JWT token from the response and save it to the browser
-                const token = response.data.token;
-                localStorage.setItem('token', token);
+                const secureToken = String(response.data.token);
+                localStorage.setItem('token', secureToken);
                 
                 alert('Login Successful!');
                 navigate('/tasks'); // Send them to the task list
