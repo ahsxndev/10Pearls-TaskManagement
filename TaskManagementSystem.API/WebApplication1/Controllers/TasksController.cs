@@ -2,9 +2,13 @@
 using Microsoft.EntityFrameworkCore;
 using TaskManagementSystem.API.Data;
 using TaskManagementSystem.API.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using Serilog; // 👈 1. Added Serilog
 
 namespace TaskManagementSystem.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class TasksController : ControllerBase
@@ -16,52 +20,86 @@ namespace TaskManagementSystem.API.Controllers
             _context = context;
         }
 
-        // 1. GET: api/tasks (Read All)
+        private int GetUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return userIdClaim != null ? int.Parse(userIdClaim) : 0;
+        }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
         {
-            return await _context.Tasks.ToListAsync();
+            int userId = GetUserId();
+            Log.Information("User {UserId} is fetching their tasks.", userId);
+
+            return await _context.Tasks
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
         }
 
-        // 2. GET: api/tasks/5 (Read One - Required for Task Detail Screen)
         [HttpGet("{id}")]
         public async Task<ActionResult<TaskItem>> GetTask(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
-            if (task == null) return NotFound();
+            int userId = GetUserId();
+            var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+
+            if (task == null)
+            {
+                Log.Warning("User {UserId} tried to access non-existent or unauthorized Task {TaskId}", userId, id);
+                return NotFound("Task not found.");
+            }
+
             return task;
         }
 
-        // 3. POST: api/tasks (Create - Required for New Task Screen)
         [HttpPost]
         public async Task<ActionResult<TaskItem>> CreateTask(TaskItem task)
         {
+            task.UserId = GetUserId();
+
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
+
+            // 👈 2. Professional Logging
+            Log.Information("SUCCESS: Task '{Title}' created by User {UserId}", task.Title, task.UserId);
+
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
         }
 
-        // 4. PUT: api/tasks/5 (Update)
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTask(int id, TaskItem task)
         {
+            int userId = GetUserId();
             if (id != task.Id) return BadRequest();
 
+            var existingTask = await _context.Tasks.AnyAsync(t => t.Id == id && t.UserId == userId);
+            if (!existingTask)
+            {
+                Log.Error("SECURITY ALERT: User {UserId} attempted to modify Task {TaskId} without ownership.", userId, id);
+                return Unauthorized();
+            }
+
+            task.UserId = userId;
             _context.Entry(task).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+
+            Log.Information("Task {TaskId} updated by User {UserId}", id, userId);
 
             return NoContent();
         }
 
-        // 5. DELETE: api/tasks/5 (Delete)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            int userId = GetUserId();
+            var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+
             if (task == null) return NotFound();
 
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
+
+            Log.Warning("Task {TaskId} DELETED by User {UserId}", id, userId);
 
             return NoContent();
         }
